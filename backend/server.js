@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { startTicketMonitor } = require('./jobs/ticketMonitor');
 const startSLAMonitor = require('./cron/slaMonitor');
-
+const path = require('path');
 
 // Initialize Express
 const app = express();
@@ -19,6 +19,9 @@ app.use('/api/tickets', require('./routes/ticketRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/technicians', require('./routes/technicianRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/uploads', require('./routes/uploadRoutes'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
