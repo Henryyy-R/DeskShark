@@ -18,6 +18,7 @@ app.use(express.json()); // Automatically parses incoming JSON payloads
 app.use('/api/tickets', require('./routes/ticketRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/technicians', require('./routes/technicianRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
