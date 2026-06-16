@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { startTicketMonitor } = require('./jobs/ticketMonitor');
+const startSLAMonitor = require('./cron/slaMonitor');
 
 // Initialize Express
 const app = express();
@@ -21,6 +22,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('Connected to DeskShark MongoDB');
     startTicketMonitor(); // <-- Boot the background worker
+    startSLAMonitor();    // <-- Boot the SLA cron job
   })
   .catch((err) => console.log(err));
 
