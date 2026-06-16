@@ -1,30 +1,30 @@
 const mongoose = require('mongoose');
 
 const technicianSchema = new mongoose.Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true, 
-    unique: true 
+  name: {
+    type: String,
+    required: true,
   },
-  skills: [{ 
-    type: String, 
-    required: true 
-  }], 
-  activeTickets: { 
-    type: Number, 
-    default: 0 
-  }, 
-  maxCapacity: { 
-    type: Number, 
-    default: 10 
-  },   
-  performanceScore: { 
-    type: Number, 
-    min: 0, 
-    max: 100, 
-    default: 100 
-  } 
-});
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  skills: [{
+    type: String // e.g., ['Network', 'Hardware', 'Software', 'Access']
+  }],
+  activeTickets: {
+    type: Number,
+    default: 0, // Used for Workload Balancing (Section 7.4)
+  },
+  maximumCapacity: {
+    type: Number,
+    default: 10, // Used for Workload Balancing (Section 7.4)
+  },
+  performanceScore: {
+    type: Number,
+    default: 100, // 0-100 scale, used for Performance Rating (Section 7.5.1)
+  }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Technician', technicianSchema);
