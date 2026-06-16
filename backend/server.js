@@ -5,6 +5,7 @@ const cors = require('cors');
 const { startTicketMonitor } = require('./jobs/ticketMonitor');
 const startSLAMonitor = require('./cron/slaMonitor');
 
+
 // Initialize Express
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json()); // Automatically parses incoming JSON payloads
 // 👉 THE MISSING LINK: Connect the /api/tickets URL to your route file
 app.use('/api/tickets', require('./routes/ticketRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/technicians', require('./routes/technicianRoutes'));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
