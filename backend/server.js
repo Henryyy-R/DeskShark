@@ -10,6 +10,9 @@ const app = express();
 app.use(cors()); // Allows your Bootstrap frontend to communicate with this API
 app.use(express.json()); // Automatically parses incoming JSON payloads
 
+// 👉 THE MISSING LINK: Connect the /api/tickets URL to your route file
+app.use('/api/tickets', require('./routes/ticketRoutes'));
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
