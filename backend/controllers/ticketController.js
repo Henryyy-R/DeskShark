@@ -1,6 +1,7 @@
 const Ticket = require('../models/Ticket');
 const { calculatePriority } = require('../utils/priorityCalculator'); 
-const mongoose = require('mongoose'); // Added to generate a fake User ID
+const { calculateSLADates } = require('../utils/slaCalculator'); // <-- ADD THIS LINE
+const mongoose = require('mongoose');
 
 const createTicket = async (req, res) => {
   try {
@@ -9,28 +10,27 @@ const createTicket = async (req, res) => {
     // 1. Unpack BOTH the string level and the numerical score from the calculator
     const { level, score } = calculatePriority(impact, urgency, affectedUsers);
 
-    // --- TEMPORARY MOCK DATA TO SATISFY DATABASE VALIDATION ---
-    const generateTicketNumber = `TKT-${Math.floor(Math.random() * 100000)}`; // e.g., TKT-48912
-    const fakeUserId = new mongoose.Types.ObjectId(); // A valid-looking MongoDB ID
-    
-    const now = new Date();
-    const fakeResponseDue = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours from now
-    const fakeResolutionDue = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+    // 2. Calculate SLA Dates using the new Priority level
+    const { responseDue, resolutionDue } = calculateSLADates(level);
 
-    // 2. Build the ticket with ALL required fields, including the new priorityScore
+    // --- TEMPORARY MOCK DATA (We only need fake IDs now, no more fake dates!) ---
+    const generateTicketNumber = `TKT-${Math.floor(Math.random() * 100000)}`; 
+    const fakeUserId = new mongoose.Types.ObjectId(); 
+
+    // 3. Build the ticket
     const newTicket = new Ticket({
       title,
       description,
       category,
       impact,
       urgency,
-      priority: level,         // The string label (e.g., 'Critical')
-      priorityScore: score,    // The exact calculated number (e.g., 71)
+      priority: level,         
+      priorityScore: score,    
       affectedUsers,
       ticketNumber: generateTicketNumber,
       requesterId: fakeUserId,
-      slaResponseDue: fakeResponseDue,
-      slaResolutionDue: fakeResolutionDue
+      slaResponseDue: responseDue,    // <-- Uses the real calculated time
+      slaResolutionDue: resolutionDue // <-- Uses the real calculated time
     });
 
     // Save to MongoDB
