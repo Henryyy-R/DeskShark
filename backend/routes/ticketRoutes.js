@@ -1,9 +1,20 @@
 const express = require('express');
 const router = express.Router();
-// Import the controller logic you just wrote
-const { createTicket } = require('../controllers/ticketController');
 
-// When a POST request hits this file, send it to the createTicket function
+// Import all functions from the controller
+const { 
+  createTicket, 
+  resolveTicket, 
+  getTickets, 
+  getTicketById 
+} = require('../controllers/ticketController');
+
+// --- Standard CRUD Routes ---
 router.post('/', createTicket);
+router.get('/', getTickets);          // Get all tickets
+router.get('/:id', getTicketById);    // Get one specific ticket
+
+// --- Specialized Action Routes ---
+router.put('/:id/resolve', resolveTicket);
 
 module.exports = router;
