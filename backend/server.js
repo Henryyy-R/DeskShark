@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { startTicketMonitor } = require('./jobs/ticketMonitor');
 
 // Initialize Express
 const app = express();
@@ -16,11 +17,10 @@ app.use('/api/tickets', require('./routes/ticketRoutes'));
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log('✅ Connected to DeskShark MongoDB');
+    console.log('Connected to DeskShark MongoDB');
+    startTicketMonitor(); // <-- Boot the background worker
   })
-  .catch((err) => {
-    console.error('❌ Database connection error:', err.message);
-  });
+  .catch((err) => console.log(err));
 
 // Health Check Route
 app.get('/api/health', (req, res) => {
