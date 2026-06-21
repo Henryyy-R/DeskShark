@@ -6,7 +6,6 @@ const { startTicketMonitor } = require('./jobs/ticketMonitor');
 const startSLAMonitor = require('./cron/slaMonitor');
 const path = require('path');
 const authorizeRole = require('./middleware/authMiddleware');
-const { clerkMiddleware } = require('@clerk/express');
 
 // 🔒 NEW: Import Clerk's security tools
 const { clerkMiddleware, getAuth } = require('@clerk/express');
