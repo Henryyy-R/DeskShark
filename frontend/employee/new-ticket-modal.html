@@ -1,0 +1,44 @@
+<div class="modal fade" id="newTicketModal" tabindex="-1" data-bs-theme="dark">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content card-custom text-light border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold text-light">Report a New Issue</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="new-ticket-form">
+                    <div class="mb-3">
+                        <label class="form-label text-light opacity-75">Issue Title</label>
+                        <input type="text" id="ticket-title" class="form-control text-white border-secondary" style="background-color: #0b0f19;" required placeholder="e.g., Cannot connect to the printer">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light opacity-75">Description</label>
+                        <textarea id="ticket-desc" class="form-control text-white border-secondary" style="background-color: #0b0f19;" rows="3" required placeholder="Provide as much detail as possible..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-light opacity-75">Urgency</label>
+                            <select id="ticket-urgency" class="form-select text-white border-secondary" style="background-color: #0b0f19;">
+                                <option value="Low">Low - Annoying, but can work</option>
+                                <option value="Medium">Medium - Affecting my work</option>
+                                <option value="High">High - Cannot work at all</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-light opacity-75">Category</label>
+                            <select id="ticket-category" class="form-select text-white border-secondary" style="background-color: #0b0f19;">
+                                <option value="Hardware">Hardware (PC, Monitor)</option>
+                                <option value="Software">Software (App crashing)</option>
+                                <option value="Network">Network (No internet)</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-brand" id="submit-ticket-btn">Submit Ticket</button>
+            </div>
+        </div>
+    </div>
+</div>

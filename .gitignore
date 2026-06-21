@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Secrets
+.env
+
+# User Uploaded Files
+uploads/
+
+# Debug Logs
+*.log
+
+# macOS hidden files 
+.DS_Store

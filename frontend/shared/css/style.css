@@ -1,0 +1,33 @@
+:root {
+    --ds-brand-blue: #0ea5e9;
+    --ds-bg-nav: #0f172a;
+    --ds-bg-body: #0b0f19;
+    --ds-card-bg: #1e293b;
+}
+
+body {
+    background-color: var(--ds-bg-body) !important;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+.navbar-custom {
+    background-color: var(--ds-bg-nav);
+    border-bottom: 1px solid #334155;
+}
+
+.btn-brand {
+    background-color: var(--ds-brand-blue);
+    color: white;
+    font-weight: 600;
+    border: none;
+}
+
+.btn-brand:hover {
+    background-color: #0284c7;
+    color: white;
+}
+
+.card-custom {
+    background-color: var(--ds-card-bg);
+    border: 1px solid #334155;
+}

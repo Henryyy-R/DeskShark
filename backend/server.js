@@ -5,6 +5,8 @@ const cors = require('cors');
 const { startTicketMonitor } = require('./jobs/ticketMonitor');
 const startSLAMonitor = require('./cron/slaMonitor');
 const path = require('path');
+const authorizeRole = require('./middleware/authMiddleware');
+const { clerkMiddleware } = require('@clerk/express');
 
 // 🔒 NEW: Import Clerk's security tools
 const { clerkMiddleware, getAuth } = require('@clerk/express');
@@ -58,4 +60,9 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server initialized and running on port ${PORT}`);
+});
+
+// Only Admins can generate reports
+app.get('/api/admin/reports', clerkMiddleware, authorizeRole('admin'), (req, res) => {
+    res.json({ data: "Sensitive report data" });
 });
