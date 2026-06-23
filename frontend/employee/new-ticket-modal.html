@@ -15,22 +15,39 @@
                         <label class="form-label text-light opacity-75">Description</label>
                         <textarea id="ticket-desc" class="form-control text-white border-secondary" style="background-color: #0b0f19;" rows="3" required placeholder="Provide as much detail as possible..."></textarea>
                     </div>
+                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label text-light opacity-75">Urgency</label>
-                            <select id="ticket-urgency" class="form-select text-white border-secondary" style="background-color: #0b0f19;">
-                                <option value="Low">Low - Annoying, but can work</option>
-                                <option value="Medium">Medium - Affecting my work</option>
-                                <option value="High">High - Cannot work at all</option>
+                            <label class="form-label text-light opacity-75">Impact (1-5)</label>
+                            <select id="ticket-impact" class="form-select text-white border-secondary" style="background-color: #0b0f19;">
+                                <option value="1">1 - Minimal (Just me)</option>
+                                <option value="3" selected>3 - Moderate (My team)</option>
+                                <option value="5">5 - Critical (Whole company)</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label class="form-label text-light opacity-75">Urgency (1-5)</label>
+                            <select id="ticket-urgency" class="form-select text-white border-secondary" style="background-color: #0b0f19;">
+                                <option value="1">1 - Whenever possible</option>
+                                <option value="3" selected>3 - Standard timeframe</option>
+                                <option value="5">5 - Immediate halt to work</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label text-light opacity-75">Category</label>
                             <select id="ticket-category" class="form-select text-white border-secondary" style="background-color: #0b0f19;">
-                                <option value="Hardware">Hardware (PC, Monitor)</option>
-                                <option value="Software">Software (App crashing)</option>
-                                <option value="Network">Network (No internet)</option>
+                                <option value="Hardware">Hardware</option>
+                                <option value="Software">Software</option>
+                                <option value="Network">Network</option>
+                                <option value="Access">Access/Passwords</option>
                             </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-light opacity-75">Est. Affected Users</label>
+                            <input type="number" id="ticket-affected-users" class="form-control text-white border-secondary" style="background-color: #0b0f19;" min="1" value="1" required>
                         </div>
                     </div>
                 </form>

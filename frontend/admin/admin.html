@@ -1,12 +1,340 @@
 <div class="container-fluid mt-4 px-4">
-    <h2 class="mb-4 fw-bold">System Overview</h2>
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card card-custom text-center shadow-sm py-3">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">System Overview</h2>
+        <button class="btn btn-brand px-3" onclick="refreshAdmin()">↻ Refresh</button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-custom text-center py-3">
                 <div class="card-body">
-                    <h6 class="text-uppercase fw-bold text-muted mb-2">Active Tickets</h6>
-                    <h2 class="display-5 fw-bold mb-0" style="color: var(--ds-brand-blue);" id="kpi-active">0</h2>
+                    <h6 class="text-uppercase fw-bold text-muted mb-2 small">Total Tickets</h6>
+                    <h3 class="fw-bold mb-0" style="color: var(--ds-brand-blue);" id="kpi-total">—</h3>
                 </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom text-center py-3">
+                <div class="card-body">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2 small">Open</h6>
+                    <h3 class="fw-bold mb-0 text-warning" id="kpi-open">—</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom text-center py-3">
+                <div class="card-body">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2 small">Resolved</h6>
+                    <h3 class="fw-bold mb-0 text-success" id="kpi-resolved">—</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom text-center py-3">
+                <div class="card-body">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2 small">SLA Breaches</h6>
+                    <h3 class="fw-bold mb-0 text-danger" id="kpi-breaches">—</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="adminTabs">
+        <li class="nav-item">
+            <a class="nav-link active" href="#" onclick="showTab('tickets')">All Tickets</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showTab('reports')">Reports</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showTab('users')">User Management</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showTab('technicians')">Technicians</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showTab('sla')">SLA Rules</a>
+        </li>
+    </ul>
+
+    <!-- TAB: ALL TICKETS -->
+    <div id="tab-tickets">
+        <div class="card card-custom shadow-sm p-0 overflow-hidden mb-4">
+            <div class="card-body pb-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold text-uppercase text-muted small mb-3">All Tickets</h6>
+                <div class="mb-3">
+                    <select class="form-select form-select-sm bg-dark text-light border-secondary" id="admin-status-filter" onchange="filterAdminTickets()">
+                        <option value="all">All Statuses</option>
+                        <option value="Open">Open</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead style="background-color: rgba(0,0,0,0.2);">
+                        <tr>
+                            <th class="ps-4">Ticket #</th>
+                            <th>Title</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Assigned To</th>
+                            <th>SLA</th>
+                            <th>Age</th>
+                            <th class="pe-4">Created</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-tickets-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: REPORTS -->
+    <div id="tab-reports" style="display:none;">
+        <div class="row g-3 mb-4">
+            <div class="col-md-5">
+                <div class="card card-custom h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Tickets by Priority</h6>
+                        <div id="priority-breakdown"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card card-custom h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Technician Performance (Section 7.5)</h6>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Active Tickets</th>
+                                        <th>Performance Score</th>
+                                        <th>PerfRating</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tech-leaderboard-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: USER MANAGEMENT -->
+    <div id="tab-users" style="display:none;">
+        <div class="card card-custom mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-uppercase text-muted small mb-0">Users</h6>
+                    <button class="btn btn-brand btn-sm" onclick="showCreateUserModal()">+ Create User</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead style="background-color: rgba(0,0,0,0.2);">
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: TECHNICIANS -->
+    <div id="tab-technicians" style="display:none;">
+        <div class="card card-custom mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-uppercase text-muted small mb-0">Technician Profiles</h6>
+                    <button class="btn btn-brand btn-sm" onclick="showCreateTechModal()">+ Add Technician</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead style="background-color: rgba(0,0,0,0.2);">
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Skills</th>
+                                <th>Active Tickets</th>
+                                <th>Capacity</th>
+                                <th>Perf Score</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="technicians-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: SLA RULES -->
+    <div id="tab-sla" style="display:none;">
+        <div class="card card-custom mb-4">
+            <div class="card-body">
+                <h6 class="fw-bold text-uppercase text-muted small mb-3">SLA Configuration</h6>
+                <p class="text-muted small mb-3">Response and resolution time targets per priority level (in minutes).</p>
+                <div class="table-responsive">
+                    <table class="table table-dark align-middle mb-0">
+                        <thead style="background-color: rgba(0,0,0,0.2);">
+                            <tr>
+                                <th>Priority</th>
+                                <th>Response Target (mins)</th>
+                                <th>Resolution Target (mins)</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sla-rules-body"></tbody>
+                    </table>
+                </div>
+                <button class="btn btn-brand btn-sm mt-3" onclick="initSLARules()">Initialize Default SLA Rules</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- CREATE USER MODAL -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">Create User Account</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Username</label>
+                    <input type="text" class="form-control bg-dark text-light border-secondary" id="new-user-username">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Email</label>
+                    <input type="email" class="form-control bg-dark text-light border-secondary" id="new-user-email">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Password</label>
+                    <input type="password" class="form-control bg-dark text-light border-secondary" id="new-user-password">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Role</label>
+                    <select class="form-select bg-dark text-light border-secondary" id="new-user-role">
+                        <option value="employee">Employee</option>
+                        <option value="technician">Technician</option>
+                    </select>
+                </div>
+                <div id="create-user-error" class="text-danger small" style="display:none;"></div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-brand" id="btn-create-user">Create User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT ROLE MODAL -->
+<div class="modal fade" id="editRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">Edit User Role</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small" id="edit-role-username"></p>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Role</label>
+                    <select class="form-select bg-dark text-light border-secondary" id="edit-role-select">
+                        <option value="employee">Employee</option>
+                        <option value="technician">Technician</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-brand" id="btn-save-role">Save Role</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE TECHNICIAN MODAL -->
+<div class="modal fade" id="createTechModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold" id="tech-modal-title">Add Technician</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-tech-id">
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Name (must match Clerk username)</label>
+                    <input type="text" class="form-control bg-dark text-light border-secondary" id="tech-name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Email</label>
+                    <input type="email" class="form-control bg-dark text-light border-secondary" id="tech-email">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Skills (comma separated)</label>
+                    <input type="text" class="form-control bg-dark text-light border-secondary" id="tech-skills" placeholder="Network, Hardware, Software">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Maximum Capacity</label>
+                    <input type="number" class="form-control bg-dark text-light border-secondary" id="tech-capacity" value="10">
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-brand" id="btn-save-tech">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT SLA MODAL -->
+<div class="modal fade" id="editSLAModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">Edit SLA Rule</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-sla-id">
+                <p class="fw-bold" id="edit-sla-priority"></p>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Response Target (minutes)</label>
+                    <input type="number" class="form-control bg-dark text-light border-secondary" id="edit-sla-response">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase">Resolution Target (minutes)</label>
+                    <input type="number" class="form-control bg-dark text-light border-secondary" id="edit-sla-resolution">
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-brand" id="btn-save-sla">Save</button>
             </div>
         </div>
     </div>

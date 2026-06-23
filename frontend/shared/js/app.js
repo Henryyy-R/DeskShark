@@ -1,29 +1,42 @@
 window.startApp = async () => {
     try {
-        await window.Clerk.load();
+        const response = await fetch('http://localhost:5000/api/config');
+        const config = await response.json();
 
-        if (!window.Clerk.user) {
-            window.location.href = '/frontend/index.html';
-            return;
-        }
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js";
+        script.setAttribute('data-clerk-publishable-key', config.clerkPublishableKey);
+        script.crossOrigin = "anonymous";
+        script.async = true;
 
-        const userButtonDiv = document.getElementById('user-button');
-        if (userButtonDiv) {
-            window.Clerk.mountUserButton(userButtonDiv, {
-                afterSignOutUrl: '/frontend/index.html' 
-            });
-        }
+        script.onload = async () => {
+            await window.Clerk.load();
 
-        const role = window.Clerk.user.publicMetadata.role || 'employee';
+            if (!window.Clerk.user) {
+                window.location.href = '/frontend/index.html';
+                return;
+            }
 
-        const titles = {
-            'admin': '🦈 DeskShark Administrator',
-            'technician': '🦈 DeskShark Technician',
-            'employee': '🦈 DeskShark Support'
+            const userButtonDiv = document.getElementById('user-button');
+            if (userButtonDiv) {
+                window.Clerk.mountUserButton(userButtonDiv, {
+                    afterSignOutUrl: '/frontend/index.html'
+                });
+            }
+
+            const role = window.Clerk.user.publicMetadata.role || 'employee';
+
+            const titles = {
+                'admin': '🦈 DeskShark Administrator',
+                'technician': '🦈 DeskShark Technician',
+                'employee': '🦈 DeskShark Support'
+            };
+            document.getElementById('navbar-title').innerText = titles[role] || titles['employee'];
+
+            await loadView(role);
         };
-        document.getElementById('navbar-title').innerText = titles[role] || titles['employee'];
 
-        await loadView(role);
+        document.body.appendChild(script);
 
     } catch (error) {
         console.error("Application Failed to Load:", error);
@@ -47,4 +60,5 @@ async function loadView(role) {
         console.error(error);
     }
 }
+
 window.addEventListener('load', window.startApp);

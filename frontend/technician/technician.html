@@ -1,8 +1,51 @@
 <div class="container-fluid mt-4 px-4">
-    <h2 class="mb-4 fw-bold">My Work Queue</h2>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">My Work Queue</h2>
+        <span class="text-muted small" id="tech-queue-count"></span>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-custom text-center py-3">
+                <div class="card-body">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2 small">Assigned</h6>
+                    <h3 class="fw-bold mb-0" style="color: var(--ds-brand-blue);" id="stat-assigned">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom text-center py-3">
+                <div class="card-body">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2 small">In Progress</h6>
+                    <h3 class="fw-bold mb-0 text-warning" id="stat-inprogress">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom text-center py-3">
+                <div class="card-body">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2 small">SLA Breaches</h6>
+                    <h3 class="fw-bold mb-0 text-danger" id="stat-breached">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom text-center py-3">
+                <div class="card-body">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2 small">Resolved Today</h6>
+                    <h3 class="fw-bold mb-0 text-success" id="stat-resolved">0</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Table -->
     <div class="card card-custom shadow-sm p-0 overflow-hidden">
         <div class="table-responsive mb-0">
-            <table class="table table-dark table-hover align-middle mb-0 border-0">
+            <table class="table table-dark table-hover align-middle mb-0">
                 <thead style="background-color: rgba(0,0,0,0.2);">
                     <tr>
                         <th class="ps-4">Ticket #</th>
@@ -10,11 +53,73 @@
                         <th>Priority</th>
                         <th>Status</th>
                         <th>SLA Deadline</th>
+                        <th>SLA</th>
                         <th class="pe-4">Action</th>
                     </tr>
                 </thead>
                 <tbody id="ticket-queue-body"></tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket Detail Modal -->
+<div class="modal fade" id="ticketDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold" id="modal-ticket-number">Ticket Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Info -->
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h6 class="text-muted small text-uppercase">Title</h6>
+                        <p class="fw-bold" id="modal-title"></p>
+                        <h6 class="text-muted small text-uppercase">Description</h6>
+                        <p class="opacity-75" id="modal-description"></p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted small text-uppercase">Priority</h6>
+                        <p id="modal-priority"></p>
+                        <h6 class="text-muted small text-uppercase">Category</h6>
+                        <p id="modal-category"></p>
+                        <h6 class="text-muted small text-uppercase">SLA Resolution Due</h6>
+                        <p id="modal-sla-due"></p>
+                    </div>
+                </div>
+
+                <!-- Update Status -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Update Status</label>
+                    <select class="form-select bg-dark text-light border-secondary" id="modal-status-select">
+                        <option value="Assigned">Assigned</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                </div>
+
+                <!-- Resolution Note -->
+                <div class="mb-3" id="resolution-note-section" style="display:none;">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Resolution Note</label>
+                    <textarea class="form-control bg-dark text-light border-secondary" id="modal-resolution-note" rows="3" placeholder="Describe what was done to resolve this issue..."></textarea>
+                </div>
+
+                <!-- Comments -->
+                <div class="mb-3">
+                    <h6 class="text-muted small text-uppercase fw-bold mb-2">Comments / History</h6>
+                    <div id="modal-comments" class="mb-2" style="max-height: 200px; overflow-y: auto;"></div>
+                    <div class="input-group mt-2">
+                        <input type="text" class="form-control bg-dark text-light border-secondary" id="modal-comment-input" placeholder="Add a comment...">
+                        <button class="btn btn-outline-secondary" id="btn-add-comment">Post</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-brand" id="btn-update-ticket">Save Changes</button>
+            </div>
         </div>
     </div>
 </div>
