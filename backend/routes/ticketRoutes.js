@@ -1,27 +1,33 @@
 const express = require('express');
 const router = express.Router();
 
-// Import all functions from the ticket controller
-const { 
-  createTicket, 
-  resolveTicket, 
-  getTickets, 
-  getTicketById 
+const {
+  createTicket,
+  resolveTicket,
+  getTickets,
+  getAllTickets,
+  getTicketById,
+  updateTicketStatus
 } = require('../controllers/ticketController');
 
-// Import the comment controller functions
-const { addComment, getTicketComments } = require('../controllers/commentController'); // <-- NEW
+const { addComment, getTicketComments } = require('../controllers/commentController');
 
-// --- Standard Ticket Routes ---
-router.post('/', createTicket);
+// Employee: their own tickets
 router.get('/', getTickets);
+router.post('/', createTicket);
+
+// Technician/Admin: all tickets
+router.get('/all', getAllTickets);
+
+// Single ticket
 router.get('/:id', getTicketById);
 
-// --- Specialized Action Routes ---
+// Actions
 router.put('/:id/resolve', resolveTicket);
+router.put('/:id/status', updateTicketStatus);   // NEW
 
-// --- Communication Layer Routes ---
-router.post('/:id/comments', addComment);           // <-- NEW
-router.get('/:id/comments', getTicketComments);     // <-- NEW
+// Comments
+router.post('/:id/comments', addComment);
+router.get('/:id/comments', getTicketComments);
 
 module.exports = router;

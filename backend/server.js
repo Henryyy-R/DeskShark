@@ -3,65 +3,67 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { startTicketMonitor } = require('./jobs/ticketMonitor');
-const startSLAMonitor = require('./cron/slaMonitor');
 const path = require('path');
 const authorizeRole = require('./middleware/authMiddleware');
-
-// 🔒 NEW: Import Clerk's security tools
 const { clerkMiddleware, getAuth } = require('@clerk/express');
 
-// Initialize Express
 const app = express();
 
-// Middleware
-app.use(cors()); // Allows your Bootstrap frontend to communicate with this API
-app.use(express.json()); // Automatically parses incoming JSON payloads
+app.use(cors());
+app.use(express.json());
+app.use(clerkMiddleware());
 
-// 🔒 NEW: Activate Clerk to check ID badges for every incoming request
-app.use(clerkMiddleware()); 
+// Config route
+app.get('/api/config', (req, res) => {
+  res.json({ clerkPublishableKey: process.env.CLERK_PUBLISHABLE_KEY });
+});
 
-// 🛡️ CUSTOM SECURITY GUARD
-// This stops the 404 redirect and properly sends a 401 error
+// Auth guard middleware
 const requireLogin = (req, res, next) => {
   const auth = getAuth(req);
   if (!auth.userId) {
     return res.status(401).json({ message: 'Access Denied: No Clerk Token Provided!' });
   }
-  next(); // If they have a token, let them through!
+  next();
 };
 
-// 👉 THE MISSING LINK: Connect the /api/tickets URL to your route file
-// 🔒 NEW: Add requireAuth() to lock down these routes so ONLY logged-in users can access them
-app.use('/api/tickets', requireLogin, require('./routes/ticketRoutes'));
-app.use('/api/reports', requireLogin, require('./routes/reportRoutes'));
-app.use('/api/technicians', requireLogin, require('./routes/technicianRoutes'));
-app.use('/api/notifications', requireLogin, require('./routes/notificationRoutes'));
-app.use('/api/uploads', requireLogin, require('./routes/uploadRoutes'));
+// Pre-load routes
+const userRoutes = require('./routes/userRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const technicianRoutes = require('./routes/technicianRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const slaRoutes = require('./routes/slaRoutes');
 
-// Note: We leave the static /uploads folder public so images can actually load on the screen!
+// Routes
+app.use('/api/users', (req, res, next) => requireLogin(req, res, next), userRoutes);
+app.use('/api/tickets', (req, res, next) => requireLogin(req, res, next), ticketRoutes);
+app.use('/api/reports', (req, res, next) => requireLogin(req, res, next), reportRoutes);
+app.use('/api/technicians', (req, res, next) => requireLogin(req, res, next), technicianRoutes);
+app.use('/api/notifications', (req, res, next) => requireLogin(req, res, next), notificationRoutes);
+app.use('/api/uploads', (req, res, next) => requireLogin(req, res, next), uploadRoutes);
+app.use('/api/admin', (req, res, next) => requireLogin(req, res, next), adminRoutes);
+app.use('/api/sla', (req, res, next) => requireLogin(req, res, next), slaRoutes);
+
+// Static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('Connected to DeskShark MongoDB');
-    startTicketMonitor(); // <-- Boot the background worker
-    startSLAMonitor();    // <-- Boot the SLA cron job
-  })
-  .catch((err) => console.log(err));
-
-// Health Check Route (Left public so you can always check if the server is alive)
+// Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'active', message: 'DeskShark API is running' });
 });
 
-// Start the Server
+// MongoDB + background jobs
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('Connected to DeskShark MongoDB');
+    startTicketMonitor();
+  })
+  .catch((err) => console.log(err));
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server initialized and running on port ${PORT}`);
-});
-
-// Only Admins can generate reports
-app.get('/api/admin/reports', clerkMiddleware, authorizeRole('admin'), (req, res) => {
-    res.json({ data: "Sensitive report data" });
 });

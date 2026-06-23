@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  appwriteId: {
+  // FIX: was appwriteId - updated to match Clerk auth
+  clerkId: {
     type: String,
     required: true,
     unique: true,
-    index: true // Speeds up queries when logging in via Appwrite
+    index: true
   },
   name: {
     type: String,
@@ -18,11 +19,11 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['Employee', 'Technician', 'Administrator'],
-    default: 'Employee'
+    enum: ['employee', 'technician', 'admin'],
+    default: 'employee'
   },
   department: {
-    type: String, // Useful for sorting tickets by user department
+    type: String
   }
 }, { timestamps: true });
 

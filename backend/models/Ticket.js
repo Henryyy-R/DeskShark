@@ -23,10 +23,9 @@ const ticketSchema = new mongoose.Schema({
     default: 'Open' 
   },
   requesterId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+    type: String, 
     required: true 
-  },
+},
   assignedTechnicianId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Technician', 

@@ -15,15 +15,23 @@ const technicianSchema = new mongoose.Schema({
   }],
   activeTickets: {
     type: Number,
-    default: 0, // Used for Workload Balancing (Section 7.4)
+    default: 0, // Workload Balancing (Section 7.4)
   },
   maximumCapacity: {
     type: Number,
-    default: 10, // Used for Workload Balancing (Section 7.4)
+    default: 10, // Workload Balancing (Section 7.4)
   },
   performanceScore: {
     type: Number,
-    default: 100, // 0-100 scale, used for Performance Rating (Section 7.5.1)
+    default: 100, // 0-100 scale (Section 7.5)
+  },
+  // FIX: needed for real performance recalculation in resolveTicket
+  // Placeholder until customer rating feature is built (default 4.0/5)
+  averageCustomerRating: {
+    type: Number,
+    default: 4.0,
+    min: 1,
+    max: 5
   }
 }, { timestamps: true });
 
