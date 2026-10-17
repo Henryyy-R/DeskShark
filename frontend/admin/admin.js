@@ -1,17 +1,17 @@
 let allAdminTickets = [];
 let currentEditUserId = null;
-let createUserModal, editRoleModal, createTechModal, editSLAModal;
+let createUserModal, createTechModal, editSLAModal, editUserModal;
 
 async function setupAdminView() {
     createUserModal = new bootstrap.Modal(document.getElementById('createUserModal'));
-    editRoleModal = new bootstrap.Modal(document.getElementById('editRoleModal'));
     createTechModal = new bootstrap.Modal(document.getElementById('createTechModal'));
     editSLAModal = new bootstrap.Modal(document.getElementById('editSLAModal'));
+    editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
 
     document.getElementById('btn-create-user').addEventListener('click', createUser);
-    document.getElementById('btn-save-role').addEventListener('click', saveRole);
     document.getElementById('btn-save-tech').addEventListener('click', saveTechnician);
     document.getElementById('btn-save-sla').addEventListener('click', saveSLARule);
+    document.getElementById('btn-save-user').addEventListener('click', saveUserEdit);
 
     await refreshAdmin();
 }
@@ -175,7 +175,10 @@ async function loadUsers() {
                 <td><span class="badge ${roleBadge(u.public_metadata?.role)}">${u.public_metadata?.role || 'employee'}</span></td>
                 <td class="text-muted small">${new Date(u.created_at).toLocaleDateString()}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="openEditRole('${u.id}', '${u.username}', '${u.public_metadata?.role || 'employee'}')">Edit Role</button>
+                    <button class="btn btn-sm btn-outline-secondary"
+                        onclick="openEditUser('${u.id}', '${u.username}', '${u.email_addresses?.[0]?.email_address || ''}', '${u.public_metadata?.role || 'employee'}')">
+                        Edit
+                    </button>
                 </td>
             </tr>`).join('');
     } catch (e) {
@@ -225,33 +228,6 @@ async function createUser() {
         errorEl.style.display = 'block';
     } finally {
         btn.textContent = 'Create User';
-        btn.disabled = false;
-    }
-}
-
-function openEditRole(userId, username, currentRole) {
-    currentEditUserId = userId;
-    document.getElementById('edit-role-username').textContent = `User: ${username}`;
-    document.getElementById('edit-role-select').value = currentRole;
-    editRoleModal.show();
-}
-
-async function saveRole() {
-    const role = document.getElementById('edit-role-select').value;
-    const btn = document.getElementById('btn-save-role');
-    btn.textContent = 'Saving...';
-    btn.disabled = true;
-    try {
-        await window.apiFetch(`/admin/users/${currentEditUserId}/role`, {
-            method: 'PUT',
-            body: JSON.stringify({ role })
-        });
-        editRoleModal.hide();
-        loadUsers();
-    } catch (e) {
-        alert('Failed to update role: ' + e.message);
-    } finally {
-        btn.textContent = 'Save Role';
         btn.disabled = false;
     }
 }
@@ -426,5 +402,85 @@ async function initSLARules() {
         alert('Failed to initialize SLA rules: ' + e.message);
     }
 }
+
+async function exportReport(type) {
+    try {
+        const token = await window.Clerk.session.getToken();
+        const url = `/api/reports/export/${type}`;
+
+        // Use fetch with auth header, then trigger download
+        const response = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            alert('Export failed: ' + err.message);
+            return;
+        }
+
+        const blob = await response.blob();
+        const filename = response.headers.get('Content-Disposition')
+            ?.split('filename=')[1]
+            ?.replace(/"/g, '')
+            || `DeskShark_${type}_report.csv`;
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    } catch (e) {
+        alert('Export failed: ' + e.message);
+    }
+}
+
+function openEditUser(userId, username, email, role) {
+    currentEditUserId = userId;
+    document.getElementById('edit-user-username').textContent = `Editing: ${username}`;
+    document.getElementById('edit-user-email').value = email;
+    document.getElementById('edit-user-password').value = '';
+    document.getElementById('edit-user-role').value = role;
+    document.getElementById('edit-user-error').style.display = 'none';
+    editUserModal.show();
+}
+
+async function saveUserEdit() {
+    const email = document.getElementById('edit-user-email').value.trim();
+    const password = document.getElementById('edit-user-password').value.trim();
+    const role = document.getElementById('edit-user-role').value;
+    const errorEl = document.getElementById('edit-user-error');
+
+    const btn = document.getElementById('btn-save-user');
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
+
+    try {
+        await window.apiFetch(`/admin/users/${currentEditUserId}/role`, {
+            method: 'PUT',
+            body: JSON.stringify({ role })
+        });
+
+        if (email || password) {
+            await window.apiFetch(`/admin/users/${currentEditUserId}/credentials`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    ...(email && { email }),
+                    ...(password && { password })
+                })
+            });
+        }
+
+        editUserModal.hide();
+        loadUsers();
+    } catch (e) {
+        errorEl.textContent = e.message;
+        errorEl.style.display = 'block';
+    } finally {
+        btn.textContent = 'Save Changes';
+        btn.disabled = false;
+    }
+}
+
 
 setupAdminView();

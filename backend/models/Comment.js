@@ -8,9 +8,17 @@ const commentSchema = new mongoose.Schema({
     index: true
   },
   authorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String, // Clerk userId (string, not ObjectId)
     required: true
+  },
+  authorName: {
+    type: String,
+    default: 'Unknown'
+  },
+  authorRole: {
+    type: String,
+    enum: ['employee', 'technician', 'admin'],
+    default: 'employee'
   },
   content: {
     type: String,
@@ -18,11 +26,11 @@ const commentSchema = new mongoose.Schema({
   },
   isResolutionNote: {
     type: Boolean,
-    default: false // Flags if this comment is the official fix that closed the ticket
+    default: false
   },
   visibility: {
     type: String,
-    enum: ['Public', 'Internal'], // Internal for technician-to-technician notes
+    enum: ['Public', 'Internal'],
     default: 'Public'
   }
 }, { timestamps: true });

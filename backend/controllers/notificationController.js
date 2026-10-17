@@ -1,15 +1,21 @@
-const Notification = require('../models/Notification'); // Ensure this matches your exact filename
-const mongoose = require('mongoose');
+const Notification = require('../models/Notification');
+const { getAuth } = require('@clerk/express');
 
 // ==========================================
-// GET UNREAD NOTIFICATIONS FOR A USER
+// GET NOTIFICATIONS (unread or all history)
 // ==========================================
 const getUserNotifications = async (req, res) => {
   try {
-    const userId = req.params.userId;
-    // Searching by your schema's 'recipientId'
-    const notifications = await Notification.find({ recipientId: userId, isRead: false }).sort({ createdAt: -1 });
-    
+    const auth = getAuth(req);
+    const showAll = req.query.all === 'true';
+
+    const query = { recipientId: auth.userId };
+    if (!showAll) query.isRead = false;
+
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .limit(showAll ? 50 : 20);
+
     res.status(200).json(notifications);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch notifications', error: error.message });
@@ -17,53 +23,52 @@ const getUserNotifications = async (req, res) => {
 };
 
 // ==========================================
-// MARK NOTIFICATION AS READ
+// GET UNREAD COUNT
+// ==========================================
+const getUnreadCount = async (req, res) => {
+  try {
+    const auth = getAuth(req);
+    const count = await Notification.countDocuments({
+      recipientId: auth.userId,
+      isRead: false
+    });
+    res.status(200).json({ count });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to get count', error: error.message });
+  }
+};
+
+// ==========================================
+// MARK ONE AS READ
 // ==========================================
 const markAsRead = async (req, res) => {
   try {
-    const notificationId = req.params.id;
-    
-    const updatedNotification = await Notification.findByIdAndUpdate(
-      notificationId,
+    const notification = await Notification.findByIdAndUpdate(
+      req.params.id,
       { isRead: true },
-      { new: true } // Returns the updated document
+      { new: true }
     );
-
-    if (!updatedNotification) {
-      return res.status(404).json({ message: 'Notification not found' });
-    }
-
-    res.status(200).json(updatedNotification);
+    if (!notification) return res.status(404).json({ message: 'Notification not found' });
+    res.status(200).json(notification);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update notification', error: error.message });
+    res.status(500).json({ message: 'Failed to mark as read', error: error.message });
   }
 };
 
 // ==========================================
-// CREATE A NOTIFICATION (For Testing/Internal Use)
+// MARK ALL AS READ
 // ==========================================
-const createNotification = async (req, res) => {
+const markAllAsRead = async (req, res) => {
   try {
-    // Using recipientId and ticketId from your schema
-    const { recipientId, message, type, ticketId } = req.body;
-
-    const newNotification = new Notification({
-      recipientId,
-      message,
-      type, // Must perfectly match your enum: 'Assignment', 'SLA_Warning', 'Escalation', 'Resolution'
-      ticketId,
-      isRead: false
-    });
-
-    const savedNotification = await newNotification.save();
-    res.status(201).json(savedNotification);
+    const auth = getAuth(req);
+    await Notification.updateMany(
+      { recipientId: auth.userId, isRead: false },
+      { isRead: true }
+    );
+    res.status(200).json({ message: 'All notifications marked as read.' });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create notification', error: error.message });
+    res.status(500).json({ message: 'Failed to mark all as read', error: error.message });
   }
 };
 
-module.exports = {
-  getUserNotifications,
-  markAsRead,
-  createNotification
-};
+module.exports = { getUserNotifications, getUnreadCount, markAsRead, markAllAsRead };

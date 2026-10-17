@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
   recipientId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String, // Clerk userId (string, not ObjectId)
     required: true,
     index: true
   },
@@ -13,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['Assignment', 'SLA_Warning', 'Escalation', 'Resolution'],
+    enum: ['Assignment', 'StatusUpdate', 'SLA_Warning', 'SLA_Breach', 'Escalation', 'Resolution'],
     required: true
   },
   message: {
@@ -22,7 +21,8 @@ const notificationSchema = new mongoose.Schema({
   },
   isRead: {
     type: Boolean,
-    default: false
+    default: false,
+    index: true
   }
 }, { timestamps: true });
 
