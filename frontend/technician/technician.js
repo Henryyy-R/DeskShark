@@ -128,12 +128,20 @@ async function loadComments(ticketId) {
             container.innerHTML = '<p class="text-muted small">No comments yet.</p>';
             return;
         }
-        container.innerHTML = comments.map(c => `
-            <div class="p-2 mb-1 rounded" style="background: rgba(255,255,255,0.05);">
-                <p class="mb-0 small">${c.content}</p>
-                <small class="text-muted">${new Date(c.createdAt).toLocaleString()}</small>
-            </div>
-        `).join('');
+        container.innerHTML = comments.map(c => {
+            const roleColor = { admin: 'text-danger', technician: 'text-info', employee: 'text-muted' }[c.authorRole] || 'text-muted';
+            const isInternal = c.visibility === 'Internal';
+            return `
+                <div class="p-2 mb-1 rounded ${isInternal ? 'border border-warning' : ''}" style="background: rgba(255,255,255,0.05);">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="fw-bold ${roleColor}">${c.authorName || 'Unknown'} <span class="text-muted fw-normal">(${c.authorRole})</span></small>
+                        <small class="text-muted">${new Date(c.createdAt).toLocaleString()}</small>
+                    </div>
+                    <p class="mb-0 small">${c.content}</p>
+                    ${isInternal ? '<small class="text-warning">Internal note</small>' : ''}
+                </div>
+            `;
+        }).join('');
         container.scrollTop = container.scrollHeight;
     } catch (e) {
         container.innerHTML = '<p class="text-muted small">Could not load comments.</p>';
@@ -142,13 +150,14 @@ async function loadComments(ticketId) {
 
 async function postComment() {
     const input = document.getElementById('modal-comment-input');
+    const visibility = document.getElementById('comment-visibility').value;
     const content = input.value.trim();
     if (!content) return;
 
     try {
         await window.apiFetch(`/tickets/${currentTicketId}/comments`, {
             method: 'POST',
-            body: JSON.stringify({ content })
+            body: JSON.stringify({ content, visibility })
         });
         input.value = '';
         await loadComments(currentTicketId);

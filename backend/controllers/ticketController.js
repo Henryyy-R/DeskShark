@@ -5,34 +5,26 @@ const { calculatePriority } = require('../utils/priorityCalculator');
 const { calculateSLADates } = require('../utils/slaCalculator');
 const { assignTechnician } = require('../utils/assignmentEngine');
 const { calculatePerformanceScore } = require('../utils/performanceCalculator');
-const mongoose = require('mongoose');
+const { createNotification } = require('../utils/notificationHelper');
 
 // ==========================================
-// CREATE TICKET (Sections 7.1, 7.2, 7.4)
+// CREATE TICKET
 // ==========================================
 const createTicket = async (req, res) => {
   try {
     const auth = getAuth(req);
-    if (!auth.userId) {
-      return res.status(401).json({ message: 'Unauthorized request' });
-    }
+    if (!auth.userId) return res.status(401).json({ message: 'Unauthorized request' });
 
     const { title, description, category, impact, urgency, affectedUsers } = req.body;
 
-    // 1. Calculate Priority
     const { level, score } = calculatePriority(impact, urgency, affectedUsers);
-
-    // 2. Calculate SLA Dates
     const { responseDue, resolutionDue } = calculateSLADates(level);
 
-    // 3. Technician Assignment Pipeline
     const availableTechnicians = await Technician.find().lean();
     const assignmentResult = assignTechnician(category, availableTechnicians);
 
-    // FIX #1: Generate ticket number using timestamp to avoid collisions
     const generateTicketNumber = `TKT-${Date.now()}`;
 
-    // 4. Build the ticket
     const newTicket = new Ticket({
       title,
       description,
@@ -48,13 +40,11 @@ const createTicket = async (req, res) => {
       requesterId: auth.userId,
       slaResponseDue: responseDue,
       slaResolutionDue: resolutionDue,
-      // If a technician was assigned, set status to Assigned
       status: assignmentResult.technicianId ? 'Assigned' : 'Open'
     });
 
     const savedTicket = await newTicket.save();
 
-    // FIX #2: Increment activeTickets on the assigned technician
     if (assignmentResult.technicianId) {
       await Technician.findByIdAndUpdate(
         assignmentResult.technicianId,
@@ -62,19 +52,27 @@ const createTicket = async (req, res) => {
       );
     }
 
-    res.status(201).json(savedTicket);
+    // Notify employee their ticket was submitted
+    await createNotification({
+      recipientId: auth.userId,
+      ticketId: savedTicket._id,
+      type: 'Assignment',
+      message: `Your ticket "${savedTicket.title}" (${savedTicket.ticketNumber}) has been submitted and ${assignmentResult.technicianId ? 'assigned to a technician.' : 'is pending assignment.'}`
+    });
 
+    res.status(201).json(savedTicket);
   } catch (error) {
     res.status(500).json({ message: 'Failed to create ticket', error: error.message });
   }
 };
 
 // ==========================================
-// RESOLVE TICKET (Section 7.5)
+// RESOLVE TICKET
 // ==========================================
 const resolveTicket = async (req, res) => {
   try {
     const ticketId = req.params.id;
+    const { resolutionNote } = req.body;
 
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
@@ -82,22 +80,27 @@ const resolveTicket = async (req, res) => {
 
     ticket.status = 'Resolved';
     ticket.resolvedAt = new Date();
+    if (resolutionNote) ticket.resolutionNote = resolutionNote;
     await ticket.save();
 
-    // FIX #3: Use real technician data for performance recalculation
+    // Notify employee ticket is resolved
+    await createNotification({
+      recipientId: ticket.requesterId,
+      ticketId: ticket._id,
+      type: 'Resolution',
+      message: `Your ticket "${ticket.title}" (${ticket.ticketNumber}) has been resolved.${resolutionNote ? ' Note: ' + resolutionNote : ''}`
+    });
+
     if (ticket.assignedTechnicianId) {
       const technician = await Technician.findById(ticket.assignedTechnicianId);
       if (technician) {
-        // Decrement activeTickets
         technician.activeTickets = Math.max(0, technician.activeTickets - 1);
 
-        // Count actual resolved tickets for this technician
         const resolvedCount = await Ticket.countDocuments({
           assignedTechnicianId: technician._id,
           status: 'Resolved'
         });
 
-        // Count total tickets to calculate real SLA compliance %
         const totalTickets = await Ticket.countDocuments({
           assignedTechnicianId: technician._id,
           status: { $in: ['Resolved', 'Closed'] }
@@ -113,10 +116,7 @@ const resolveTicket = async (req, res) => {
           ? (slaCompliantTickets / totalTickets) * 100
           : 100;
 
-        // Normalize resolvedCount to 0-100 (cap at 100)
         const resolvedNormalized = Math.min(resolvedCount, 100);
-
-        // Customer rating: default to 4.0 until ratings feature is built
         const customerRatingRaw = technician.averageCustomerRating || 4.0;
 
         technician.performanceScore = calculatePerformanceScore(
@@ -136,14 +136,12 @@ const resolveTicket = async (req, res) => {
 };
 
 // ==========================================
-// GET TICKETS (Employee - Only Their Own)
+// GET TICKETS (Employee - own only)
 // ==========================================
 const getTickets = async (req, res) => {
   try {
     const auth = getAuth(req);
-    if (!auth.userId) {
-      return res.status(401).json({ message: 'Unauthorized request' });
-    }
+    if (!auth.userId) return res.status(401).json({ message: 'Unauthorized request' });
 
     const tickets = await Ticket.find({ requesterId: auth.userId })
       .populate('assignedTechnicianId', 'name email')
@@ -171,11 +169,6 @@ const getAllTickets = async (req, res) => {
 
     if (userRole === 'technician') {
       const username = auth.sessionClaims?.username;
-      console.log('CLERK USERNAME:', username);
-
-      const allTechs = await Technician.find().select('name');
-      console.log('TECHNICIANS IN DB:', allTechs.map(t => t.name));
-
       const technician = await Technician.findOne({ name: username });
       if (!technician) {
         return res.status(404).json({ message: `Technician profile not found for username: ${username}` });
@@ -194,25 +187,22 @@ const getAllTickets = async (req, res) => {
 };
 
 // ==========================================
-// GET A SINGLE TICKET BY ID
+// GET SINGLE TICKET BY ID
 // ==========================================
 const getTicketById = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
       .populate('assignedTechnicianId', 'name email');
 
-    if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
-    }
-
+    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
     res.status(200).json(ticket);
   } catch (error) {
     res.status(500).json({ message: 'Server error while fetching ticket.', error: error.message });
   }
 };
 
-// UPDATE TICKET STATUS (Technician action)
-// Add this to the existing ticketController.js exports
+// ==========================================
+// UPDATE TICKET STATUS
 // ==========================================
 const updateTicketStatus = async (req, res) => {
   try {
@@ -227,11 +217,8 @@ const updateTicketStatus = async (req, res) => {
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
     if (ticket.status === 'Resolved') return res.status(400).json({ message: 'Cannot update a resolved ticket.' });
 
-    // Set respondedAt on first response
     if (status === 'In Progress' && !ticket.respondedAt) {
       ticket.respondedAt = new Date();
-
-      // Check response SLA breach
       if (ticket.respondedAt > ticket.slaResponseDue) {
         ticket.slaResponseBreached = true;
       }
@@ -239,6 +226,14 @@ const updateTicketStatus = async (req, res) => {
 
     ticket.status = status;
     await ticket.save();
+
+    // Notify employee of status change
+    await createNotification({
+      recipientId: ticket.requesterId,
+      ticketId: ticket._id,
+      type: 'StatusUpdate',
+      message: `Your ticket "${ticket.title}" (${ticket.ticketNumber}) status has been updated to: ${status}.`
+    });
 
     res.status(200).json({ message: 'Ticket status updated.', ticket });
   } catch (error) {

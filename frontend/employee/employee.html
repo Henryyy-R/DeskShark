@@ -5,5 +5,59 @@
             + Report an Issue
         </button>
     </div>
-    <div class="row" id="employee-tickets-container"></div>
+    <div id="employee-tickets-container"></div>
+</div>
+
+<!-- Ticket Detail Modal -->
+<div class="modal fade" id="ticketDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold" id="emp-modal-ticket-number"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Ticket Info -->
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h6 class="text-muted small text-uppercase">Title</h6>
+                        <p class="fw-bold" id="emp-modal-title"></p>
+                        <h6 class="text-muted small text-uppercase">Description</h6>
+                        <p class="opacity-75" id="emp-modal-description"></p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted small text-uppercase">Priority</h6>
+                        <p id="emp-modal-priority"></p>
+                        <h6 class="text-muted small text-uppercase">Status</h6>
+                        <p id="emp-modal-status"></p>
+                        <h6 class="text-muted small text-uppercase">Category</h6>
+                        <p id="emp-modal-category"></p>
+                        <h6 class="text-muted small text-uppercase">SLA Resolution Due</h6>
+                        <p id="emp-modal-sla"></p>
+                    </div>
+                </div>
+
+                <!-- Resolution Note -->
+                <div id="emp-resolution-note" style="display:none;" class="mb-3 p-3 rounded border border-success">
+                    <h6 class="text-success small text-uppercase fw-bold mb-1">✅ Resolution Note</h6>
+                    <p class="mb-0 small text-light" id="emp-resolution-note-text"></p>
+                </div>
+
+                <hr class="border-secondary">
+
+                <!-- Comments Section -->
+                <h6 class="fw-bold text-uppercase text-muted small mb-2">Comments</h6>
+                <div id="emp-modal-comments" class="mb-3" style="max-height: 250px; overflow-y: auto;"></div>
+
+                <!-- Add Comment -->
+                <div class="input-group mt-2">
+                    <input type="text" class="form-control bg-dark text-light border-secondary" id="emp-comment-input" placeholder="Add a comment...">
+                    <button class="btn btn-brand" id="emp-btn-add-comment">Post</button>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>

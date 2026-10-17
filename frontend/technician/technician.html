@@ -110,7 +110,13 @@
                 <div class="mb-3">
                     <h6 class="text-muted small text-uppercase fw-bold mb-2">Comments / History</h6>
                     <div id="modal-comments" class="mb-2" style="max-height: 200px; overflow-y: auto;"></div>
-                    <div class="input-group mt-2">
+                    <div class="mb-2">
+                        <select class="form-select form-select-sm bg-dark text-light border-secondary" id="comment-visibility">
+                            <option value="Public">Public (visible to employee)</option>
+                            <option value="Internal">Internal (technicians/admin only)</option>
+                        </select>
+                    </div>
+                    <div class="input-group mt-1">
                         <input type="text" class="form-control bg-dark text-light border-secondary" id="modal-comment-input" placeholder="Add a comment...">
                         <button class="btn btn-outline-secondary" id="btn-add-comment">Post</button>
                     </div>

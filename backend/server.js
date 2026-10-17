@@ -47,8 +47,11 @@ app.use('/api/uploads', (req, res, next) => requireLogin(req, res, next), upload
 app.use('/api/admin', (req, res, next) => requireLogin(req, res, next), adminRoutes);
 app.use('/api/sla', (req, res, next) => requireLogin(req, res, next), slaRoutes);
 
-// Static uploads
+// Serve the frontend. The pages expect to live under /frontend/...
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Send visitors at the root to the login page
+app.get('/', (req, res) => res.redirect('/frontend/index.html'));
 
 // Health check
 app.get('/api/health', (req, res) => {
