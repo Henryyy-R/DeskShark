@@ -48,7 +48,7 @@ app.use('/api/admin', (req, res, next) => requireLogin(req, res, next), adminRou
 app.use('/api/sla', (req, res, next) => requireLogin(req, res, next), slaRoutes);
 
 // Serve the frontend. The pages expect to live under /frontend/...
-app.use('/frontend', express.static(path.join(__dirname, '..', 'frontend')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Send visitors at the root to the login page
 app.get('/', (req, res) => res.redirect('/frontend/index.html'));
