@@ -1,0 +1,48 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: crdskf2500b.azurecr.io
+  IMAGE: deskshark
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure (OIDC, no stored credentials)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_PUSH_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Log in to the registry
+        run: az acr login --name crdskf2500b
+
+      - name: Build the image
+        run: |
+          TAG="${GITHUB_SHA::12}"
+          docker build -t "$REGISTRY/$IMAGE:$TAG" .
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Push the image
+        run: docker push "$REGISTRY/$IMAGE:$TAG"
+
+      - name: Record what was pushed
+        run: echo "Pushed $REGISTRY/$IMAGE:$TAG" >> "$GITHUB_STEP_SUMMARY"
