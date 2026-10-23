@@ -1,20 +1,22 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+
+// Same folder server.js serves from, whatever the working directory is
+const uploadDir = path.join(__dirname, '..', 'uploads');
 
 // Configure how and where Multer saves the files
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    const dir = 'uploads/';
     // Auto-create the uploads folder if it doesn't exist yet
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
-    }
-    cb(null, dir);
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
   },
   filename(req, file, cb) {
-    // Rename the file with a timestamp so users don't overwrite each other's files
-    cb(null, `TKT-${Date.now()}${path.extname(file.originalname)}`);
+    // Random name: can't be guessed, and two uploads can never collide
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `TKT-${crypto.randomBytes(16).toString('hex')}${ext}`);
   }
 });
 
