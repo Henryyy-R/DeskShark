@@ -47,8 +47,12 @@ app.use('/api/uploads', (req, res, next) => requireLogin(req, res, next), upload
 app.use('/api/admin', (req, res, next) => requireLogin(req, res, next), adminRoutes);
 app.use('/api/sla', (req, res, next) => requireLogin(req, res, next), slaRoutes);
 
-// Static uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static uploads login req
+app.use('/uploads', requireLogin, express.static(path.join(__dirname, 'uploads'), {
+  index: false,
+  dotfiles: 'deny',
+  setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
+}));
 
 // Serve the frontend. The pages expect to live under /frontend/...
 app.use('/frontend', express.static(path.join(__dirname, '..', 'frontend')));
