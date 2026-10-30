@@ -101,7 +101,7 @@ function renderLeaderboard(technicians) {
         return `
             <tr>
                 <td class="text-muted">${i + 1}</td>
-                <td class="fw-semibold">${tech.name}</td>
+                <td class="fw-semibold">${escapeHtml(tech.name)}</td>
                 <td>${tech.activeTickets}</td>
                 <td class="${scoreColor} fw-bold">${tech.performanceScore}</td>
                 <td class="text-muted">${perfRating} / 5</td>
@@ -119,7 +119,7 @@ async function loadAllTickets() {
         allAdminTickets = await window.apiFetch('/tickets/all');
         renderAdminTickets(allAdminTickets);
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Failed to load: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Failed to load: ${escapeHtml(e.message)}</td></tr>`;
     }
 }
 
@@ -141,13 +141,14 @@ function renderAdminTickets(tickets) {
         const slaBadge = ticket.slaResolutionBreached ? '<span class="badge bg-danger">Breached</span>' : '<span class="badge bg-success">OK</span>';
         const ageDays = Math.floor((Date.now() - new Date(ticket.createdAt)) / (1000 * 60 * 60 * 24));
         const ageBadge = ageDays >= 8 ? `<span class="badge bg-danger">${ageDays}d</span>` : ageDays >= 4 ? `<span class="badge bg-warning text-dark">${ageDays}d</span>` : `<span class="badge bg-secondary">${ageDays}d</span>`;
-        const assignedTo = ticket.assignedTechnicianId?.name || '<span class="text-muted">Unassigned</span>';
+        const assignedName = ticket.assignedTechnicianId?.name;
+        const assignedTo = assignedName ? escapeHtml(assignedName) : '<span class="text-muted">Unassigned</span>';
         tbody.insertAdjacentHTML('beforeend', `
             <tr>
-                <td class="ps-4 text-muted small">${ticket.ticketNumber || '—'}</td>
-                <td class="fw-semibold">${ticket.title}</td>
-                <td class="${priorityClass}">${ticket.priority || '—'}</td>
-                <td><span class="badge ${statusBadge}">${ticket.status}</span></td>
+                <td class="ps-4 text-muted small">${escapeHtml(ticket.ticketNumber || '—')}</td>
+                <td class="fw-semibold">${escapeHtml(ticket.title)}</td>
+                <td class="${priorityClass}">${escapeHtml(ticket.priority || '—')}</td>
+                <td><span class="badge ${statusBadge}">${escapeHtml(ticket.status)}</span></td>
                 <td class="small">${assignedTo}</td>
                 <td>${slaBadge}</td>
                 <td>${ageBadge}</td>
@@ -168,21 +169,36 @@ async function loadUsers() {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">No users found.</td></tr>';
             return;
         }
-        tbody.innerHTML = users.map(u => `
+        tbody.innerHTML = users.map(u => {
+            const email = u.email_addresses?.[0]?.email_address || '';
+            const role = u.public_metadata?.role || 'employee';
+            return `
             <tr>
-                <td class="fw-semibold">${u.username || '—'}</td>
-                <td class="text-muted small">${u.email_addresses?.[0]?.email_address || '—'}</td>
-                <td><span class="badge ${roleBadge(u.public_metadata?.role)}">${u.public_metadata?.role || 'employee'}</span></td>
+                <td class="fw-semibold">${escapeHtml(u.username || '—')}</td>
+                <td class="text-muted small">${escapeHtml(email || '—')}</td>
+                <td><span class="badge ${roleBadge(u.public_metadata?.role)}">${escapeHtml(role)}</span></td>
                 <td class="text-muted small">${new Date(u.created_at).toLocaleDateString()}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-secondary"
-                        onclick="openEditUser('${u.id}', '${u.username}', '${u.email_addresses?.[0]?.email_address || ''}', '${u.public_metadata?.role || 'employee'}')">
+                        data-action="edit-user"
+                        data-user-id="${escapeHtml(u.id)}"
+                        data-username="${escapeHtml(u.username || '')}"
+                        data-email="${escapeHtml(email)}"
+                        data-role="${escapeHtml(role)}">
                         Edit
                     </button>
                 </td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
+
+        // Data goes in data-* attributes and is read back here, never put into inline JavaScript.
+        tbody.querySelectorAll('[data-action="edit-user"]').forEach(btn => {
+            btn.addEventListener('click', () => openEditUser(
+                btn.dataset.userId, btn.dataset.username, btn.dataset.email, btn.dataset.role
+            ));
+        });
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">${escapeHtml(e.message)}</td></tr>`;
     }
 }
 
@@ -249,20 +265,37 @@ async function loadTechnicians() {
             const scoreColor = t.performanceScore >= 80 ? 'text-success' : t.performanceScore >= 60 ? 'text-warning' : 'text-danger';
             return `
                 <tr>
-                    <td class="fw-semibold">${t.name}</td>
-                    <td class="text-muted small">${t.email}</td>
-                    <td>${t.skills.map(s => `<span class="badge bg-secondary me-1">${s}</span>`).join('')}</td>
+                    <td class="fw-semibold">${escapeHtml(t.name)}</td>
+                    <td class="text-muted small">${escapeHtml(t.email)}</td>
+                    <td>${t.skills.map(s => `<span class="badge bg-secondary me-1">${escapeHtml(s)}</span>`).join('')}</td>
                     <td>${t.activeTickets}</td>
                     <td>${t.activeTickets} / ${t.maximumCapacity}</td>
                     <td class="${scoreColor} fw-bold">${t.performanceScore} <small class="text-muted">(${perfRating}/5)</small></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEditTech('${t._id}', '${t.name}', '${t.email}', '${t.skills.join(', ')}', ${t.maximumCapacity})">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTechnician('${t._id}')">Delete</button>
+                        <button class="btn btn-sm btn-outline-secondary me-1"
+                            data-action="edit-tech"
+                            data-id="${escapeHtml(t._id)}"
+                            data-name="${escapeHtml(t.name)}"
+                            data-email="${escapeHtml(t.email)}"
+                            data-skills="${escapeHtml(t.skills.join(', '))}"
+                            data-capacity="${escapeHtml(t.maximumCapacity)}">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger"
+                            data-action="delete-tech"
+                            data-id="${escapeHtml(t._id)}">Delete</button>
                     </td>
                 </tr>`;
         }).join('');
+
+        tbody.querySelectorAll('[data-action="edit-tech"]').forEach(btn => {
+            btn.addEventListener('click', () => openEditTech(
+                btn.dataset.id, btn.dataset.name, btn.dataset.email, btn.dataset.skills, btn.dataset.capacity
+            ));
+        });
+        tbody.querySelectorAll('[data-action="delete-tech"]').forEach(btn => {
+            btn.addEventListener('click', () => deleteTechnician(btn.dataset.id));
+        });
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3 text-danger">${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-3 text-danger">${escapeHtml(e.message)}</td></tr>`;
     }
 }
 
@@ -350,14 +383,25 @@ async function loadSLARules() {
         rules.sort((a, b) => priorityOrder.indexOf(a.priorityLevel) - priorityOrder.indexOf(b.priorityLevel));
         tbody.innerHTML = rules.map(r => `
             <tr>
-                <td class="fw-semibold">${r.priorityLevel}</td>
+                <td class="fw-semibold">${escapeHtml(r.priorityLevel)}</td>
                 <td>${r.responseTargetMinutes} mins</td>
                 <td>${r.resolutionTargetMinutes} mins</td>
                 <td><span class="badge ${r.isActive ? 'bg-success' : 'bg-secondary'}">${r.isActive ? 'Active' : 'Inactive'}</span></td>
-                <td><button class="btn btn-sm btn-outline-secondary" onclick="openEditSLA('${r._id}', '${r.priorityLevel}', ${r.responseTargetMinutes}, ${r.resolutionTargetMinutes})">Edit</button></td>
+                <td><button class="btn btn-sm btn-outline-secondary"
+                    data-action="edit-sla"
+                    data-id="${escapeHtml(r._id)}"
+                    data-priority="${escapeHtml(r.priorityLevel)}"
+                    data-response="${escapeHtml(r.responseTargetMinutes)}"
+                    data-resolution="${escapeHtml(r.resolutionTargetMinutes)}">Edit</button></td>
             </tr>`).join('');
+
+        tbody.querySelectorAll('[data-action="edit-sla"]').forEach(btn => {
+            btn.addEventListener('click', () => openEditSLA(
+                btn.dataset.id, btn.dataset.priority, btn.dataset.response, btn.dataset.resolution
+            ));
+        });
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">${escapeHtml(e.message)}</td></tr>`;
     }
 }
 
