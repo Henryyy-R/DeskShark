@@ -1,5 +1,16 @@
 const API_BASE_URL = '/api';
 
+// Escapes text before it is placed into an HTML string (innerHTML,
+// insertAdjacentHTML). Use it on every value that comes from a user or
+// from the database, including names, titles, emails and error messages.
+window.escapeHtml = (value) =>
+    String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
 window.apiFetch = async (endpoint, options = {}) => {
     try {
         const token = await window.Clerk.session?.getToken();
