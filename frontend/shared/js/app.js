@@ -157,20 +157,30 @@ async function loadNotificationList(showAll = false) {
             Resolution: '✅'
         };
 
+        // The message is built on the server from ticket titles, so it must be escaped.
+        // The id goes in a data attribute and is read back by the listener below.
         list.innerHTML = notifications.map(n => `
             <div class="px-3 py-2 border-bottom border-secondary notification-item ${n.isRead ? 'opacity-50' : ''}"
                  style="cursor:${!n.isRead ? 'pointer' : 'default'};"
-                 onclick="${!n.isRead ? `readNotification('${n._id}', this)` : ''}">
+                 data-id="${escapeHtml(n._id)}"
+                 data-read="${n.isRead ? 'true' : 'false'}">
                 <div class="d-flex gap-2 align-items-start">
                     <span style="font-size:16px;">${typeIcon[n.type] || '🔔'}</span>
                     <div>
-                        <p class="mb-0 small text-light">${n.message}</p>
+                        <p class="mb-0 small text-light">${escapeHtml(n.message)}</p>
                         <small class="text-muted">${new Date(n.createdAt).toLocaleString()}</small>
                         ${n.isRead ? ' <small class="text-muted">• Read</small>' : ''}
                     </div>
                 </div>
             </div>
         `).join('');
+
+        list.querySelectorAll('.notification-item').forEach(el => {
+            el.addEventListener('click', () => {
+                if (el.dataset.read === 'true') return;
+                readNotification(el.dataset.id, el);
+            });
+        });
     } catch (e) {
         list.innerHTML = '<p class="text-danger small text-center py-3">Failed to load.</p>';
     }
@@ -181,7 +191,7 @@ async function readNotification(id, el) {
         await window.apiFetch(`/notifications/${id}/read`, { method: 'PUT' });
         el.classList.add('opacity-50');
         el.style.cursor = 'default';
-        el.setAttribute('onclick', '');
+        el.dataset.read = 'true';
         fetchNotifications();
     } catch (e) {
         console.error('Failed to mark as read:', e);
