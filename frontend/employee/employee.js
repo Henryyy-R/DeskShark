@@ -84,25 +84,31 @@ async function loadMyTickets() {
                 'Closed': 'bg-dark border border-light'
             }[ticket.status] || 'bg-secondary';
 
+            // The inner View button has no handler of its own: its click bubbles to the card.
             html += `
-                <div class="list-group-item bg-dark text-light mb-2 rounded border ${borderClass}" style="cursor:pointer;" onclick="openTicketDetail('${ticket._id}')">
+                <div class="list-group-item bg-dark text-light mb-2 rounded border ${borderClass}" style="cursor:pointer;" data-action="open-ticket" data-ticket-id="${escapeHtml(ticket._id)}">
                     <div class="d-flex w-100 justify-content-between align-items-center">
-                        <h5 class="mb-1 text-brand">${ticket.ticketNumber || 'PENDING'}: ${ticket.title}</h5>
+                        <h5 class="mb-1 text-brand">${escapeHtml(ticket.ticketNumber || 'PENDING')}: ${escapeHtml(ticket.title)}</h5>
                         <div class="d-flex gap-2 align-items-center">
-                            <span class="badge ${statusBadge}">${ticket.status || 'Open'}</span>
-                            <button class="btn btn-sm btn-outline-light" onclick="event.stopPropagation(); openTicketDetail('${ticket._id}')">View</button>
+                            <span class="badge ${statusBadge}">${escapeHtml(ticket.status || 'Open')}</span>
+                            <button class="btn btn-sm btn-outline-light">View</button>
                         </div>
                     </div>
-                    <p class="mb-1 opacity-75">${ticket.description}</p>
-                    <small>Priority: <strong>${ticket.priority || 'Calculating...'}</strong> | Category: ${ticket.category}</small>
+                    <p class="mb-1 opacity-75">${escapeHtml(ticket.description)}</p>
+                    <small>Priority: <strong>${escapeHtml(ticket.priority || 'Calculating...')}</strong> | Category: ${escapeHtml(ticket.category)}</small>
                 </div>
             `;
         });
         html += '</div>';
         container.innerHTML = html;
 
+        // The id goes in a data attribute and is read back here, never put into inline JavaScript.
+        container.querySelectorAll('[data-action="open-ticket"]').forEach(card => {
+            card.addEventListener('click', () => openTicketDetail(card.dataset.ticketId));
+        });
+
     } catch (error) {
-        container.innerHTML = `<p class="text-danger mt-3">Failed to load tickets: ${error.message}</p>`;
+        container.innerHTML = `<p class="text-danger mt-3">Failed to load tickets: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -121,7 +127,7 @@ async function openTicketDetail(ticketId) {
 
         const priorityColors = { Critical: 'text-danger', High: 'text-warning', Medium: 'text-info', Low: 'text-muted' };
         document.getElementById('emp-modal-priority').innerHTML =
-            `<span class="fw-bold ${priorityColors[ticket.priority] || ''}">${ticket.priority || '—'}</span>`;
+            `<span class="fw-bold ${priorityColors[ticket.priority] || ''}">${escapeHtml(ticket.priority || '—')}</span>`;
 
         const statusBadge = {
             Open: 'bg-secondary',
@@ -130,7 +136,7 @@ async function openTicketDetail(ticketId) {
             Resolved: 'bg-success',
             Closed: 'bg-dark border border-light'
         }[ticket.status] || 'bg-secondary';
-        document.getElementById('emp-modal-status').innerHTML = `<span class="badge ${statusBadge}">${ticket.status}</span>`;
+        document.getElementById('emp-modal-status').innerHTML = `<span class="badge ${statusBadge}">${escapeHtml(ticket.status)}</span>`;
 
         // Show resolution note if resolved
         const resolutionSection = document.getElementById('emp-resolution-note');
@@ -173,10 +179,10 @@ async function loadComments(ticketId) {
             return `
                 <div class="p-2 mb-2 rounded" style="background: rgba(255,255,255,0.05);">
                     <div class="d-flex justify-content-between mb-1">
-                        <small class="fw-bold ${roleColor}">${c.authorName || 'Unknown'} <span class="text-muted fw-normal">(${c.authorRole})</span></small>
+                        <small class="fw-bold ${roleColor}">${escapeHtml(c.authorName || 'Unknown')} <span class="text-muted fw-normal">(${escapeHtml(c.authorRole)})</span></small>
                         <small class="text-muted">${new Date(c.createdAt).toLocaleString()}</small>
                     </div>
-                    <p class="mb-0 small">${c.content}</p>
+                    <p class="mb-0 small">${escapeHtml(c.content)}</p>
                 </div>
             `;
         }).join('');

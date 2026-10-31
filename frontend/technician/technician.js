@@ -26,7 +26,7 @@ async function loadQueue() {
         renderQueue(allTickets);
         updateStats(allTickets);
     } catch (error) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load tickets: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load tickets: ${escapeHtml(error.message)}</td></tr>`;
     }
 }
 
@@ -76,18 +76,23 @@ function renderQueue(tickets) {
 
         const row = `
             <tr>
-                <td class="ps-4 text-muted small">${ticket.ticketNumber || 'TKT-PENDING'}</td>
-                <td class="fw-semibold">${ticket.title}</td>
-                <td class="${priorityClass}">${ticket.priority || '—'}</td>
-                <td><span class="badge ${statusBadge}">${ticket.status || 'Open'}</span></td>
+                <td class="ps-4 text-muted small">${escapeHtml(ticket.ticketNumber || 'TKT-PENDING')}</td>
+                <td class="fw-semibold">${escapeHtml(ticket.title)}</td>
+                <td class="${priorityClass}">${escapeHtml(ticket.priority || '—')}</td>
+                <td><span class="badge ${statusBadge}">${escapeHtml(ticket.status || 'Open')}</span></td>
                 <td class="small text-muted">${slaDate}</td>
                 <td>${slaBadge}</td>
                 <td class="pe-4">
-                    <button class="btn btn-sm btn-outline-light" onclick="openTicketDetail('${ticket._id}')">View</button>
+                    <button class="btn btn-sm btn-outline-light" data-action="view-ticket" data-ticket-id="${escapeHtml(ticket._id)}">View</button>
                 </td>
             </tr>
         `;
         tbody.insertAdjacentHTML('beforeend', row);
+    });
+
+    // The id goes in a data attribute and is read back here, never put into inline JavaScript.
+    tbody.querySelectorAll('[data-action="view-ticket"]').forEach(btn => {
+        btn.addEventListener('click', () => openTicketDetail(btn.dataset.ticketId));
     });
 }
 
@@ -100,7 +105,7 @@ async function openTicketDetail(ticketId) {
         document.getElementById('modal-ticket-number').textContent = ticket.ticketNumber;
         document.getElementById('modal-title').textContent = ticket.title;
         document.getElementById('modal-description').textContent = ticket.description;
-        document.getElementById('modal-priority').innerHTML = `<span class="badge ${getPriorityBadge(ticket.priority)}">${ticket.priority}</span>`;
+        document.getElementById('modal-priority').innerHTML = `<span class="badge ${getPriorityBadge(ticket.priority)}">${escapeHtml(ticket.priority)}</span>`;
         document.getElementById('modal-category').textContent = ticket.category;
         document.getElementById('modal-sla-due').textContent = ticket.slaResolutionDue
             ? new Date(ticket.slaResolutionDue).toLocaleString() : 'N/A';
@@ -134,10 +139,10 @@ async function loadComments(ticketId) {
             return `
                 <div class="p-2 mb-1 rounded ${isInternal ? 'border border-warning' : ''}" style="background: rgba(255,255,255,0.05);">
                     <div class="d-flex justify-content-between mb-1">
-                        <small class="fw-bold ${roleColor}">${c.authorName || 'Unknown'} <span class="text-muted fw-normal">(${c.authorRole})</span></small>
+                        <small class="fw-bold ${roleColor}">${escapeHtml(c.authorName || 'Unknown')} <span class="text-muted fw-normal">(${escapeHtml(c.authorRole)})</span></small>
                         <small class="text-muted">${new Date(c.createdAt).toLocaleString()}</small>
                     </div>
-                    <p class="mb-0 small">${c.content}</p>
+                    <p class="mb-0 small">${escapeHtml(c.content)}</p>
                     ${isInternal ? '<small class="text-warning">Internal note</small>' : ''}
                 </div>
             `;
