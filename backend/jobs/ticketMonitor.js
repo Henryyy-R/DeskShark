@@ -10,7 +10,11 @@ const startTicketMonitor = () => {
     console.log('🔍 [Cron] Running background ticket sweep...');
 
     try {
-      const openTickets = await Ticket.find({ resolvedAt: null }).populate('assignedTechnicianId');
+      // Resolved and closed tickets are finished work, so they are not swept.
+      const openTickets = await Ticket.find({
+        resolvedAt: null,
+        status: { $nin: ['Resolved', 'Closed'] }
+      }).populate('assignedTechnicianId');
 
       if (openTickets.length === 0) {
         console.log('✅ [Cron] No open tickets to process.');
@@ -21,68 +25,73 @@ const startTicketMonitor = () => {
       let updatedCount = 0;
 
       for (const ticket of openTickets) {
-        let needsUpdate = false;
+        // One failing ticket must not stop the sweep for the tickets after it.
+        try {
+          let needsUpdate = false;
 
-        // --- Algorithm 7.3: SLA Breach Detection ---
-        const { isResponseBreached, isResolutionBreached } = detectSLABreach(ticket, now);
+          // --- Algorithm 7.3: SLA Breach Detection ---
+          const { isResponseBreached, isResolutionBreached } = detectSLABreach(ticket, now);
 
-        if (isResponseBreached && !ticket.slaResponseBreached) {
-          ticket.slaResponseBreached = true;
-          needsUpdate = true;
-
-          // Notify requester of response SLA breach
-          await createNotification({
-            recipientId: ticket.requesterId,
-            ticketId: ticket._id,
-            type: 'SLA_Breach',
-            message: `Response SLA breached for ticket "${ticket.title}". Our team is working to resolve this.`
-          });
-        }
-
-        if (isResolutionBreached && !ticket.slaResolutionBreached) {
-          ticket.slaResolutionBreached = true;
-          needsUpdate = true;
-
-          // Notify requester
-          await createNotification({
-            recipientId: ticket.requesterId,
-            ticketId: ticket._id,
-            type: 'SLA_Breach',
-            message: `Resolution SLA breached for ticket "${ticket.title}".`
-          });
-
-          // Notify assigned technician if exists
-          if (ticket.assignedTechnicianId) {
-            console.log(`[Notification] SLA breach - notifying technician: ${ticket.assignedTechnicianId.name}`);
-          }
-        }
-
-        // --- Algorithm 7.7: Automatic Escalation (Near Breach Warning) ---
-        if (!ticket.slaResolutionBreached) {
-          const isNearBreach = checkEscalationThreshold(ticket, now);
-
-          if (isNearBreach && ticket.status !== 'Escalated') {
-            ticket.status = 'Escalated';
+          if (isResponseBreached && !ticket.slaResponseBreached) {
+            ticket.slaResponseBreached = true;
             needsUpdate = true;
 
-            // Notify requester of near breach
+            // Notify requester of response SLA breach
             await createNotification({
               recipientId: ticket.requesterId,
               ticketId: ticket._id,
-              type: 'SLA_Warning',
-              message: `Your ticket "${ticket.title}" is approaching its SLA deadline. A technician has been alerted.`
+              type: 'SLA_Breach',
+              message: `Response SLA breached for ticket "${ticket.title}". Our team is working to resolve this.`
+            });
+          }
+
+          if (isResolutionBreached && !ticket.slaResolutionBreached) {
+            ticket.slaResolutionBreached = true;
+            needsUpdate = true;
+
+            // Notify requester
+            await createNotification({
+              recipientId: ticket.requesterId,
+              ticketId: ticket._id,
+              type: 'SLA_Breach',
+              message: `Resolution SLA breached for ticket "${ticket.title}".`
             });
 
-            // Log technician alert (full tech notification needs clerkId on technician model)
+            // Notify assigned technician if exists
             if (ticket.assignedTechnicianId) {
-              console.log(`[Notification] Near breach escalation - technician: ${ticket.assignedTechnicianId.name}, ticket: ${ticket.ticketNumber}`);
+              console.log(`[Notification] SLA breach - notifying technician: ${ticket.assignedTechnicianId.name}`);
             }
           }
-        }
 
-        if (needsUpdate) {
-          await ticket.save();
-          updatedCount++;
+          // --- Algorithm 7.7: Automatic Escalation (Near Breach Warning) ---
+          if (!ticket.slaResolutionBreached) {
+            const isNearBreach = checkEscalationThreshold(ticket, now);
+
+            if (isNearBreach && ticket.status !== 'Escalated') {
+              ticket.status = 'Escalated';
+              needsUpdate = true;
+
+              // Notify requester of near breach
+              await createNotification({
+                recipientId: ticket.requesterId,
+                ticketId: ticket._id,
+                type: 'SLA_Warning',
+                message: `Your ticket "${ticket.title}" is approaching its SLA deadline. A technician has been alerted.`
+              });
+
+              // Log technician alert (full tech notification needs clerkId on technician model)
+              if (ticket.assignedTechnicianId) {
+                console.log(`[Notification] Near breach escalation - technician: ${ticket.assignedTechnicianId.name}, ticket: ${ticket.ticketNumber}`);
+              }
+            }
+          }
+
+          if (needsUpdate) {
+            await ticket.save();
+            updatedCount++;
+          }
+        } catch (ticketError) {
+          console.error(`❌ [Cron] Failed to process ticket ${ticket.ticketNumber}:`, ticketError.message);
         }
       }
 

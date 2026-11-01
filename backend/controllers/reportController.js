@@ -16,7 +16,7 @@ const getDashboardStats = async (req, res) => {
       technicians
     ] = await Promise.all([
       Ticket.countDocuments(),
-      Ticket.countDocuments({ status: { $in: ['Open', 'Assigned', 'In Progress'] } }),
+      Ticket.countDocuments({ status: { $in: ['Open', 'Assigned', 'In Progress', 'Escalated'] } }),
       Ticket.countDocuments({ status: { $in: ['Resolved', 'Closed'] } }),
       Ticket.countDocuments({ slaResponseBreached: true }),
       Ticket.countDocuments({ slaResolutionBreached: true }),
