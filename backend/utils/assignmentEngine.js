@@ -18,7 +18,7 @@ const assignTechnician = (ticketCategory, availableTechnicians) => {
 
     // 2. WorkloadRatio Filter (Section 7.4)
     const workloadRatio = tech.activeTickets / tech.maximumCapacity;
-    if (workloadRatio >= 0.9) return false; // Exclude overloaded techs
+    if (workloadRatio >= 1) return false; // Exclude overloaded techs
 
     return true;
   });

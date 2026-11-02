@@ -4,7 +4,7 @@ const Technician = require('../models/Technician');
 const { calculatePriority } = require('../utils/priorityCalculator');
 const { calculateSLADates } = require('../utils/slaCalculator');
 const { assignTechnician } = require('../utils/assignmentEngine');
-const { calculatePerformanceScore } = require('../utils/performanceCalculator');
+const { calculatePerformanceScore, normalizeResolvedCount } = require('../utils/performanceCalculator');
 const { createNotification } = require('../utils/notificationHelper');
 
 // ==========================================
@@ -80,6 +80,16 @@ const resolveTicket = async (req, res) => {
 
     ticket.status = 'Resolved';
     ticket.resolvedAt = new Date();
+
+    // A ticket resolved without ever being moved to In Progress still counts as responded to,
+    // at the moment it was resolved.
+    if (!ticket.respondedAt) {
+      ticket.respondedAt = ticket.resolvedAt;
+      if (ticket.respondedAt > ticket.slaResponseDue) {
+        ticket.slaResponseBreached = true;
+      }
+    }
+
     if (resolutionNote) ticket.resolutionNote = resolutionNote;
     await ticket.save();
 
@@ -116,7 +126,7 @@ const resolveTicket = async (req, res) => {
           ? (slaCompliantTickets / totalTickets) * 100
           : 100;
 
-        const resolvedNormalized = Math.min(resolvedCount, 100);
+        const resolvedNormalized = normalizeResolvedCount(resolvedCount);
         const customerRatingRaw = technician.averageCustomerRating || 4.0;
 
         technician.performanceScore = calculatePerformanceScore(
