@@ -2,6 +2,14 @@
  * DeskShark Algorithm 7.5: Technician Performance Rating
  * Calculates the master PerformanceScore (0-100 scale) based on resolved history.
  */
+
+// A technician earns the full "resolved" score after this many resolved tickets.
+const RESOLVED_TARGET = 20;
+
+// Converts a count of resolved tickets to the 0-100 scale the formula expects.
+const normalizeResolvedCount = (resolvedCount) =>
+  Math.min(((resolvedCount || 0) / RESOLVED_TARGET) * 100, 100);
+
 const calculatePerformanceScore = (resolvedNormalized, customerRatingRaw, slaCompliancePercent) => {
   // Catch missing values and default to baseline averages
   const safeResolved = resolvedNormalized || 0;
@@ -21,11 +29,11 @@ const calculatePerformanceScore = (resolvedNormalized, customerRatingRaw, slaCom
   const rawScore = resolvedWeighted + ratingWeighted + slaWeighted;
   const performanceScore = Math.round(rawScore);
 
-  // Note: Section 7.5.1 explicitly states PerfRating (1-5) is calculated 
+  // Note: Section 7.5.1 explicitly states PerfRating (1-5) is calculated
   // ON-DEMAND inside the assignment engine via (PerformanceScore / 20).
   // Therefore, we strictly return the 0-100 master score here to be saved to the database.
 
   return performanceScore;
 };
 
-module.exports = { calculatePerformanceScore };
+module.exports = { calculatePerformanceScore, normalizeResolvedCount, RESOLVED_TARGET };
