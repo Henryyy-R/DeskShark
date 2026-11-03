@@ -63,6 +63,7 @@ function renderQueue(tickets) {
             'Assigned': 'bg-primary',
             'In Progress': 'bg-warning text-dark',
             'Resolved': 'bg-success',
+            'Escalated': 'bg-danger',
             'Closed': 'bg-dark border border-secondary'
         }[ticket.status] || 'bg-secondary';
 
