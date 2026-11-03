@@ -81,6 +81,7 @@ async function loadMyTickets() {
                 'Assigned': 'bg-primary',
                 'In Progress': 'bg-warning text-dark',
                 'Resolved': 'bg-success',
+                'Escalated': 'bg-danger',
                 'Closed': 'bg-dark border border-light'
             }[ticket.status] || 'bg-secondary';
 
@@ -134,6 +135,7 @@ async function openTicketDetail(ticketId) {
             Assigned: 'bg-primary',
             'In Progress': 'bg-warning text-dark',
             Resolved: 'bg-success',
+            Escalated: 'bg-danger',
             Closed: 'bg-dark border border-light'
         }[ticket.status] || 'bg-secondary';
         document.getElementById('emp-modal-status').innerHTML = `<span class="badge ${statusBadge}">${escapeHtml(ticket.status)}</span>`;

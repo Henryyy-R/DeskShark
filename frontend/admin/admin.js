@@ -137,7 +137,7 @@ function renderAdminTickets(tickets) {
     }
     tickets.forEach(ticket => {
         const priorityClass = { Critical: 'text-danger fw-bold', High: 'text-warning fw-bold', Medium: 'text-info', Low: 'text-muted' }[ticket.priority] || '';
-        const statusBadge = { Open: 'bg-secondary', Assigned: 'bg-primary', 'In Progress': 'bg-warning text-dark', Resolved: 'bg-success', Closed: 'bg-dark border border-secondary' }[ticket.status] || 'bg-secondary';
+        const statusBadge = { Open: 'bg-secondary', Assigned: 'bg-primary', 'In Progress': 'bg-warning text-dark', Escalated: 'bg-danger', Resolved: 'bg-success', Closed: 'bg-dark border border-secondary' }[ticket.status] || 'bg-secondary';
         const slaBadge = ticket.slaResolutionBreached ? '<span class="badge bg-danger">Breached</span>' : '<span class="badge bg-success">OK</span>';
         const ageDays = Math.floor((Date.now() - new Date(ticket.createdAt)) / (1000 * 60 * 60 * 24));
         const ageBadge = ageDays >= 8 ? `<span class="badge bg-danger">${ageDays}d</span>` : ageDays >= 4 ? `<span class="badge bg-warning text-dark">${ageDays}d</span>` : `<span class="badge bg-secondary">${ageDays}d</span>`;
