@@ -26,6 +26,12 @@ const updateSLARule = async (req, res) => {
       return res.status(400).json({ message: 'responseTargetMinutes and resolutionTargetMinutes are required.' });
     }
 
+    const response = Number(responseTargetMinutes);
+    const resolution = Number(resolutionTargetMinutes);
+    if (!Number.isInteger(response) || !Number.isInteger(resolution) || response < 1 || resolution < response) {
+      return res.status(400).json({ message: 'Targets must be whole minutes, at least 1, and the resolution target cannot be shorter than the response target.' });
+    }
+
     const rule = await SLARule.findByIdAndUpdate(
       req.params.id,
       { responseTargetMinutes, resolutionTargetMinutes },
