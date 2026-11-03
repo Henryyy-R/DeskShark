@@ -194,14 +194,15 @@ const exportSLAReport = async (req, res) => {
       return str.includes(',') || str.includes('\n') || str.includes('"') ? `"${str}"` : str;
     };
 
-    // SLA resolution targets per priority (minutes)
-    const slaTargets = { Critical: 240, High: 480, Medium: 1440, Low: 4320 };
+    // The target comes from each ticket's own deadline, so it stays correct after the SLA rules change.
 
     const rows = tickets.map(t => {
       const resolutionMins = t.resolvedAt
         ? Math.round((new Date(t.resolvedAt) - new Date(t.createdAt)) / 60000)
         : '';
-      const slaTarget = slaTargets[t.priority] || '';
+      const slaTarget = t.slaResolutionDue
+        ? Math.round((new Date(t.slaResolutionDue) - new Date(t.createdAt)) / 60000)
+        : '';
 
       return [
         escapeCsv(t.ticketNumber),

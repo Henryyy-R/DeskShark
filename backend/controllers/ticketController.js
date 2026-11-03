@@ -2,7 +2,7 @@ const { getAuth } = require('@clerk/express');
 const Ticket = require('../models/Ticket');
 const Technician = require('../models/Technician');
 const { calculatePriority } = require('../utils/priorityCalculator');
-const { calculateSLADates } = require('../utils/slaCalculator');
+const { getSLADates } = require('../utils/slaCalculator');
 const { assignTechnician } = require('../utils/assignmentEngine');
 const { calculatePerformanceScore, normalizeResolvedCount } = require('../utils/performanceCalculator');
 const { createNotification } = require('../utils/notificationHelper');
@@ -18,7 +18,7 @@ const createTicket = async (req, res) => {
     const { title, description, category, impact, urgency, affectedUsers } = req.body;
 
     const { level, score } = calculatePriority(impact, urgency, affectedUsers);
-    const { responseDue, resolutionDue } = calculateSLADates(level);
+    const { responseDue, resolutionDue } = await getSLADates(level);
 
     const availableTechnicians = await Technician.find().lean();
     const assignmentResult = assignTechnician(category, availableTechnicians);
