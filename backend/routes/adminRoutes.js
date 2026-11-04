@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllUsers, createUser, updateUserRole, deleteUser } = require('../controllers/adminController');
+const { getAllUsers, createUser, updateUserRole, updateUserCredentials, deleteUser } = require('../controllers/adminController');
 const { getAuth } = require('@clerk/express');
 
 // Admin-only guard
@@ -16,6 +16,7 @@ const requireAdmin = (req, res, next) => {
 router.get('/users', requireAdmin, getAllUsers);
 router.post('/users', requireAdmin, createUser);
 router.put('/users/:userId/role', requireAdmin, updateUserRole);
+router.put('/users/:userId/credentials', requireAdmin, updateUserCredentials);
 router.delete('/users/:userId', requireAdmin, deleteUser);
 
 module.exports = router;
