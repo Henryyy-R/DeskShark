@@ -70,20 +70,26 @@ const updateUserCredentials = async (req, res) => {
       const userRes = await axios.get(`${CLERK_API}/users/${userId}`, { headers: clerkHeaders });
       const existingEmails = userRes.data.email_addresses || [];
 
-      const addEmailRes = await axios.post(`${CLERK_API}/email_addresses`, {
-        user_id: userId,
-        email_address: email,
-        verified: true,
-        primary: true
-      }, { headers: clerkHeaders });
+      // The edit dialog always sends the current email, so an unchanged address must be a no-op.
+      const currentPrimary = existingEmails.find(e => e.id === userRes.data.primary_email_address_id);
+      const unchanged = currentPrimary?.email_address?.toLowerCase() === email.toLowerCase();
 
-      await axios.patch(`${CLERK_API}/users/${userId}`, {
-        primary_email_address_id: addEmailRes.data.id
-      }, { headers: clerkHeaders });
+      if (!unchanged) {
+        const addEmailRes = await axios.post(`${CLERK_API}/email_addresses`, {
+          user_id: userId,
+          email_address: email,
+          verified: true,
+          primary: true
+        }, { headers: clerkHeaders });
 
-      for (const oldEmail of existingEmails) {
-        if (oldEmail.id !== addEmailRes.data.id) {
-          await axios.delete(`${CLERK_API}/email_addresses/${oldEmail.id}`, { headers: clerkHeaders });
+        await axios.patch(`${CLERK_API}/users/${userId}`, {
+          primary_email_address_id: addEmailRes.data.id
+        }, { headers: clerkHeaders });
+
+        for (const oldEmail of existingEmails) {
+          if (oldEmail.id !== addEmailRes.data.id) {
+            await axios.delete(`${CLERK_API}/email_addresses/${oldEmail.id}`, { headers: clerkHeaders });
+          }
         }
       }
     }
