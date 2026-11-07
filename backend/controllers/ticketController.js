@@ -6,6 +6,7 @@ const { getSLADates } = require('../utils/slaCalculator');
 const { assignTechnician } = require('../utils/assignmentEngine');
 const { calculatePerformanceScore, normalizeResolvedCount } = require('../utils/performanceCalculator');
 const { createNotification } = require('../utils/notificationHelper');
+const { getRequester, canAccessTicket, canWorkOnTicket } = require('../utils/ticketAccess');
 
 // ==========================================
 // CREATE TICKET
@@ -75,7 +76,10 @@ const resolveTicket = async (req, res) => {
     const { resolutionNote } = req.body;
 
     const ticket = await Ticket.findById(ticketId);
-    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+    const who = await getRequester(req);
+    // A ticket the requester may not see is reported as not found, so its existence is not revealed.
+    if (!ticket || !canAccessTicket(who, ticket)) return res.status(404).json({ message: 'Ticket not found' });
+    if (!canWorkOnTicket(who, ticket)) return res.status(403).json({ message: 'Access Denied: Only the assigned technician or an admin can resolve a ticket.' });
     if (ticket.status === 'Resolved') return res.status(400).json({ message: 'Ticket is already resolved.' });
 
     ticket.status = 'Resolved';
@@ -204,7 +208,9 @@ const getTicketById = async (req, res) => {
     const ticket = await Ticket.findById(req.params.id)
       .populate('assignedTechnicianId', 'name email');
 
-    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+    // A ticket the requester may not see is reported as not found, so its existence is not revealed.
+    const who = await getRequester(req);
+    if (!ticket || !canAccessTicket(who, ticket)) return res.status(404).json({ message: 'Ticket not found' });
     res.status(200).json(ticket);
   } catch (error) {
     res.status(500).json({ message: 'Server error while fetching ticket.', error: error.message });
@@ -224,7 +230,9 @@ const updateTicketStatus = async (req, res) => {
     }
 
     const ticket = await Ticket.findById(req.params.id);
-    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+    const who = await getRequester(req);
+    if (!ticket || !canAccessTicket(who, ticket)) return res.status(404).json({ message: 'Ticket not found' });
+    if (!canWorkOnTicket(who, ticket)) return res.status(403).json({ message: 'Access Denied: Only the assigned technician or an admin can update a ticket.' });
     if (ticket.status === 'Resolved') return res.status(400).json({ message: 'Cannot update a resolved ticket.' });
 
     if (status === 'In Progress' && !ticket.respondedAt) {
