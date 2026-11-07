@@ -1,6 +1,7 @@
 const Comment = require('../models/Comment');
 const Ticket = require('../models/Ticket');
 const { getAuth } = require('@clerk/express');
+const { getRequester, canAccessTicket } = require('../utils/ticketAccess');
 
 // ==========================================
 // ADD A COMMENT (FR-08)
@@ -16,11 +17,13 @@ const addComment = async (req, res) => {
     }
 
     const ticket = await Ticket.findById(ticketId);
-    if (!ticket) {
+    const who = await getRequester(req);
+    // A ticket the requester may not see is reported as not found, so its existence is not revealed.
+    if (!ticket || !canAccessTicket(who, ticket)) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
 
-    const userRole = auth.sessionClaims?.metadata?.role || 'employee';
+    const userRole = who.role;
     const username = auth.sessionClaims?.username || 'Unknown';
 
     const newComment = new Comment({
@@ -29,7 +32,8 @@ const addComment = async (req, res) => {
       authorName: username,
       authorRole: userRole,
       content: content.trim(),
-      isResolutionNote: isResolutionNote || false,
+      // Only technicians and admins can mark a comment as the resolution note
+      isResolutionNote: userRole !== 'employee' && Boolean(isResolutionNote),
       // Employees can only post public comments
       // Technicians/admins can post internal notes
       visibility: userRole === 'employee' ? 'Public' : (visibility || 'Public')
@@ -48,14 +52,18 @@ const addComment = async (req, res) => {
 // ==========================================
 const getTicketComments = async (req, res) => {
   try {
-    const auth = getAuth(req);
-    const userRole = auth.sessionClaims?.metadata?.role || 'employee';
     const ticketId = req.params.id;
+
+    const ticket = await Ticket.findById(ticketId);
+    const who = await getRequester(req);
+    if (!ticket || !canAccessTicket(who, ticket)) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
 
     let query = { ticketId };
 
     // Employees only see public comments
-    if (userRole === 'employee') {
+    if (who.role === 'employee') {
       query.visibility = 'Public';
     }
 
