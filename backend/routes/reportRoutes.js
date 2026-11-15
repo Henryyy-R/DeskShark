@@ -18,8 +18,8 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Dashboard stats (used by admin dashboard KPIs and reports tab)
-router.get('/dashboard', getDashboardStats);
+// Dashboard stats (used by admin dashboard KPIs and reports tab) — admin only
+router.get('/dashboard', requireAdmin, getDashboardStats);
 
 // CSV exports — admin only
 router.get('/export/tickets', requireAdmin, exportTicketReport);
