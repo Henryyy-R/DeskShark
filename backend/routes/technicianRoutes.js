@@ -3,7 +3,7 @@ const router = express.Router();
 const { getTechnicians, getTechnicianById, createTechnician, updateTechnician, deleteTechnician } = require('../controllers/technicianController');
 const { getAuth } = require('@clerk/express');
 
-// Admin-only guard for write operations
+// Admin-only guard: technician profiles include emails and performance scores
 const requireAdmin = (req, res, next) => {
   const auth = getAuth(req);
   const role = auth.sessionClaims?.metadata?.role;
@@ -13,8 +13,8 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-router.get('/', getTechnicians);
-router.get('/:id', getTechnicianById);
+router.get('/', requireAdmin, getTechnicians);
+router.get('/:id', requireAdmin, getTechnicianById);
 router.post('/', requireAdmin, createTechnician);
 router.put('/:id', requireAdmin, updateTechnician);
 router.delete('/:id', requireAdmin, deleteTechnician);

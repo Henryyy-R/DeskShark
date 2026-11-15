@@ -43,8 +43,10 @@ const getUnreadCount = async (req, res) => {
 // ==========================================
 const markAsRead = async (req, res) => {
   try {
-    const notification = await Notification.findByIdAndUpdate(
-      req.params.id,
+    const auth = getAuth(req);
+    // Only the recipient can mark their own notification as read.
+    const notification = await Notification.findOneAndUpdate(
+      { _id: req.params.id, recipientId: auth.userId },
       { isRead: true },
       { new: true }
     );
